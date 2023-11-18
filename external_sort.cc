@@ -13,9 +13,15 @@ seastar::future<> external_sort(const app_config &config) {
     seastar::sharded<second_pass_service> sps;
     seastar::sharded<second_pass_service> final_ps;
 
+    seastar::file input_file;
+
     try {
+
+        input_file = co_await seastar::open_file_dma(config.input_filename,
+                                                     seastar::open_flags::ro);
+
         // initialize the first pass service across shards
-        co_await fps.start(config.input_filename, config.temp_working_dir);
+        co_await fps.start(input_file.dup(), config.temp_working_dir);
 
         logger.info("Running first pass");
 
@@ -61,6 +67,10 @@ seastar::future<> external_sort(const app_config &config) {
                      std::current_exception());
     }
 
+    // cleanup
+    if (input_file) {
+        co_await input_file.close();
+    }
     co_await fps.stop();
     co_await sps.stop();
     co_await final_ps.stop();

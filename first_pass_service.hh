@@ -8,7 +8,7 @@
 // Service to read a subset of the file, split them into batches and sort them
 // in-memory
 class first_pass_service : public seastar::sharded<first_pass_service> {
-    seastar::sstring _filename, _tempdir;
+    seastar::sstring _tempdir;
     seastar::file _f;
     unsigned _temp_file_id{0};
 
@@ -22,9 +22,9 @@ class first_pass_service : public seastar::sharded<first_pass_service> {
     seastar::future<> write_pq_to_temp_file(record_priority_queue &pq);
 
   public:
-    first_pass_service(const seastar::sstring &filename,
+    first_pass_service(const seastar::file_handle input_file_handle,
                        const seastar::sstring &tempdir)
-        : _filename(filename), _tempdir(tempdir) {}
+        : _f(input_file_handle.to_file()), _tempdir(tempdir) {}
 
     unsigned int get_total_files() const { return _temp_file_id; }
 

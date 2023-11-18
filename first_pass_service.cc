@@ -5,7 +5,6 @@
 #include "common.hh"
 
 seastar::future<> first_pass_service::init() {
-    _f = co_await seastar::open_file_dma(_filename, seastar::open_flags::ro);
     auto file_size = co_await _f.size();
     assert(file_size % record_size == 0);
     const auto total_records = file_size / record_size;
