@@ -3,6 +3,7 @@
 #include <queue>
 
 #include <seastar/core/circular_buffer.hh>
+#include <seastar/core/queue.hh>
 #include <seastar/core/smp.hh>
 #include <seastar/coroutine/generator.hh>
 #include <seastar/util/log.hh>
@@ -56,5 +57,30 @@ seastar::sstring inline generate_first_pass_output_file_name(
            std::to_string(file_id);
 }
 
+// returns the name of the intermediate files produced by second pass
+seastar::sstring inline generate_second_pass_output_file_name(
+    const seastar::sstring &tempdir,
+    const unsigned int file_id = seastar::this_shard_id()) {
+    return tempdir + "/final_sorted_" + std::to_string(file_id);
+}
+
 using record_priority_queue =
     std::priority_queue<record, std::vector<record>, record_greater>;
+
+using record_queue_vector = std::vector<seastar::queue<record>>;
+
+// comparator and priority queue for a pair of record and its generator's index
+// in the record_queue_vector
+using record_and_generator_pair = std::pair<record, unsigned>;
+class record_and_generator_pair_greater {
+  public:
+    bool operator()(record_and_generator_pair &a,
+                    record_and_generator_pair &b) {
+        return strncmp(a.first.get(), b.first.get(), record_size) > 0;
+    }
+};
+
+using record_generator_priority_queue =
+    std::priority_queue<record_and_generator_pair,
+                        std::vector<record_and_generator_pair>,
+                        record_and_generator_pair_greater>;
