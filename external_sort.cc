@@ -5,6 +5,7 @@
 #include "app_config.hh"
 #include "first_pass_service.hh"
 #include "second_pass_service.hh"
+#include "verify_service.hh"
 
 seastar::future<> external_sort(const app_config &config) {
     logger.info("Starting external sort on file : {}", config.input_filename);
@@ -12,8 +13,9 @@ seastar::future<> external_sort(const app_config &config) {
     seastar::sharded<first_pass_service> fps;
     seastar::sharded<second_pass_service> sps;
     seastar::sharded<second_pass_service> final_ps;
+    seastar::sharded<verify_service> vs;
 
-    seastar::file input_file;
+    seastar::file input_file, output_file;
 
     try {
 
@@ -62,6 +64,33 @@ seastar::future<> external_sort(const app_config &config) {
         logger.info("Completed sorting the given file");
         logger.info("Sorted file is stored at : {}", config.output_filename);
 
+        if (config.verify_results) {
+            output_file = co_await seastar::open_file_dma(
+                config.output_filename, seastar::open_flags::ro);
+
+            // initialize the verify service across shards
+            co_await vs.start(output_file.dup());
+
+            logger.info("Verifying the sorted result file");
+
+            if (co_await input_file.size() != co_await output_file.size()) {
+                throw verification_exception(
+                    "sorted result file has a different size than the input "
+                    "file");
+            }
+
+            // run the verify service
+            co_await vs.invoke_on_all([](verify_service &local_service) {
+                return local_service.run();
+            });
+
+            // none of the shards threw an exception => verification succeeded;
+            logger.info("Result file verification succeeded!");
+        }
+
+    } catch (verification_exception ex) {
+        logger.error("Result file verification failed : {}", ex.what());
+
     } catch (...) {
         logger.error("external sort failed with following error : {}",
                      std::current_exception());
@@ -71,7 +100,11 @@ seastar::future<> external_sort(const app_config &config) {
     if (input_file) {
         co_await input_file.close();
     }
+    if (output_file) {
+        co_await output_file.close();
+    }
     co_await fps.stop();
     co_await sps.stop();
     co_await final_ps.stop();
+    co_await vs.stop();
 }

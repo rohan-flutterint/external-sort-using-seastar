@@ -12,6 +12,7 @@ struct app_config {
     std::string input_filename;
     std::string output_filename;
     std::string temp_working_dir;
+    bool verify_results;
 
     // registers the flags to the app template
     static void init_flags(seastar::app_template &app);

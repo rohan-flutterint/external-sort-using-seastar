@@ -23,7 +23,11 @@ void app_config::init_flags(seastar::app_template &app) {
          boost::program_options::value<std::filesystem::path>()->default_value(
              {}),
          "Directory to store the sorted result file. By default, the result "
-         "will be stored in the same directory as the input data.");
+         "will be stored in the same directory as the input data.")
+        // flag to enable/disable verifying the results
+        ("verify-results,v",
+         boost::program_options::value<bool>()->default_value(false),
+         "Verify the external sort result");
 }
 
 app_config::app_config(seastar::app_template &app) {
@@ -42,6 +46,8 @@ app_config::app_config(seastar::app_template &app) {
             output_dir /
             std::filesystem::path{input_filename}.filename().concat(".sorted");
     }
+
+    verify_results = args["verify-results"].as<bool>();
 }
 
 seastar::future<bool> app_config::is_valid() const {
