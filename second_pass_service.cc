@@ -41,7 +41,7 @@ second_pass_service::setup_read_from_files(unsigned int file_id) {
 }
 
 seastar::future<> second_pass_service::run() {
-    logger.info("starting second pass");
+    logger.debug("starting second pass");
 
     if (_number_of_files <= 1) {
         assert(_number_of_files == 1 && !_final_run);
@@ -117,5 +117,5 @@ seastar::future<> second_pass_service::run() {
     // sync tempdir to ensure that the pass1 temp file removals are flushed
     co_await seastar::sync_directory(_tempdir);
 
-    logger.info("completed second pass");
+    logger.debug("completed second pass");
 }

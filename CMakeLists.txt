@@ -30,6 +30,6 @@ endif()
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 add_compile_options(-Wno-unknown-warning-option)
 
-add_executable(external-sort main.cc external_sort.cc first_pass_service.cc second_pass_service.cc common.cc)
+add_executable(external-sort main.cc external_sort.cc first_pass_service.cc second_pass_service.cc common.cc app_config.cc)
 
 target_link_libraries(external-sort PRIVATE Seastar::seastar)

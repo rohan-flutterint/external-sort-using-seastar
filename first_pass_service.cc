@@ -60,7 +60,7 @@ seastar::future<> first_pass_service::run() {
     // open the file and init offsets for the shard
     co_await init();
 
-    logger.info("starting first pass");
+    logger.debug("starting first pass");
 
     record_priority_queue pq;
     unsigned num_of_records = 0;
@@ -89,8 +89,8 @@ seastar::future<> first_pass_service::run() {
         co_await write_pq_to_temp_file(pq);
     }
 
-    logger.info("first pass completed : sorted {} entries into {} batches",
-                num_of_records, _temp_file_id);
+    logger.debug("first pass completed : sorted {} entries into {} batches",
+                 num_of_records, _temp_file_id);
 
     // close the input file
     co_await _f.close();

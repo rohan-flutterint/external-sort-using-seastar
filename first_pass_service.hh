@@ -1,12 +1,13 @@
 #pragma once
 
 #include <seastar/core/file.hh>
+#include <seastar/core/sharded.hh>
 
 #include "common.hh"
 
 // Service to read a subset of the file, split them into batches and sort them
 // in-memory
-class first_pass_service {
+class first_pass_service : public seastar::sharded<first_pass_service> {
     seastar::sstring _filename, _tempdir;
     seastar::file _f;
     unsigned _temp_file_id{0};
